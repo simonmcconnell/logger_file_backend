@@ -1,4 +1,4 @@
-defmodule LoggerFileBackend.Mixfile do
+defmodule LoggerFileBackendWin.Mixfile do
   use Mix.Project
 
   @version "0.0.12"
@@ -46,6 +46,9 @@ defmodule LoggerFileBackend.Mixfile do
   end
 
   defp deps do
-    [{:credo, "~> 1.0", only: [:dev, :test]}, {:ex_doc, "~> 0.24", only: :dev}]
+    [
+      {:credo, "~> 1.0", only: [:dev, :test]},
+      {:ex_doc, "~> 0.24", only: :dev}
+    ]
   end
 end

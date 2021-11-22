@@ -1,11 +1,11 @@
-defmodule LoggerFileBackendTest do
+defmodule LoggerFileBackendWinTest do
   use ExUnit.Case, async: false
   require Logger
 
-  @backend {LoggerFileBackend, :test}
+  @backend {LoggerFileBackendWin, :test}
   @basedir "test/logs"
 
-  import LoggerFileBackend, only: [prune: 1, metadata_matches?: 2]
+  import LoggerFileBackendWin, only: [prune: 1, metadata_matches?: 2]
 
   setup_all do
     on_exit(fn ->
@@ -17,7 +17,7 @@ defmodule LoggerFileBackendTest do
     # We add and remove the backend here to avoid cross-test effects
     Logger.add_backend(@backend, flush: true)
 
-    config(path: logfile(context, @basedir), level: :debug)
+    config(path: @basedir, filename: logfile(context), level: :debug)
 
     on_exit(fn ->
       :ok = Logger.remove_backend(@backend)
@@ -110,10 +110,16 @@ defmodule LoggerFileBackendTest do
     refute File.exists?(path())
   end
 
-  test "can configure path" do
-    new_path = "test/logs/test.log.2"
-    config(path: new_path)
-    assert new_path == path()
+  test "can configure dir" do
+    new_dir = "test/logs/test2"
+    config(dir: new_dir)
+    assert Path.dirname(new_dir) == Path.dirname(path())
+  end
+
+  test "can configure filename" do
+    new_filename = "new-filename"
+    config(filename: new_filename)
+    assert new_filename == String.slice(Path.basename(path(), ".0.log"), 0..-12//1)
   end
 
   test "logs to new file after old file has been moved" do
@@ -123,58 +129,30 @@ defmodule LoggerFileBackendTest do
     Logger.debug("bar")
     assert log() == "foo\nbar\n"
 
-    {"", 0} = System.cmd("mv", [path(), path() <> ".1"])
+    {"", 0} = System.cmd("mv", [path(), path_for_file_num(1)])
 
     Logger.debug("biz")
     Logger.debug("baz")
     assert log() == "biz\nbaz\n"
   end
 
-  test "closes old log file after log file has been moved" do
-    Logger.debug("foo")
-    assert has_open(path())
-
-    new_path = path() <> ".1"
-    {"", 0} = System.cmd("mv", [path(), new_path])
-
-    assert has_open(new_path)
-
-    Logger.debug("bar")
-
-    assert has_open(path())
-    refute has_open(new_path)
-  end
-
-  test "closes old log file after path has been changed" do
-    Logger.debug("foo")
-    assert has_open(path())
-
-    org_path = path()
-    config(path: path() <> ".new")
-
-    Logger.debug("bar")
-    assert has_open(path())
-    refute has_open(org_path)
-  end
-
   test "log file rotate" do
     config(format: "$message\n")
     config(rotate: %{max_bytes: 4, keep: 4})
 
+    Logger.debug("rotate0")
     Logger.debug("rotate1")
     Logger.debug("rotate2")
     Logger.debug("rotate3")
     Logger.debug("rotate4")
     Logger.debug("rotate5")
-    Logger.debug("rotate6")
 
-    p = path()
-
-    assert File.read!("#{p}.4") == "rotate2\n"
-    assert File.read!("#{p}.3") == "rotate3\n"
-    assert File.read!("#{p}.2") == "rotate4\n"
-    assert File.read!("#{p}.1") == "rotate5\n"
-    assert File.read!(p) == "rotate6\n"
+    refute File.exists?("#{path_for_file_num(0)}")
+    refute File.exists?("#{path_for_file_num(1)}")
+    assert File.read!("#{path_for_file_num(2)}") == "rotate2\n"
+    assert File.read!("#{path_for_file_num(3)}") == "rotate3\n"
+    assert File.read!("#{path_for_file_num(4)}") == "rotate4\n"
+    assert File.read!(path()) == "rotate5\n"
 
     config(rotate: nil)
   end
@@ -211,26 +189,13 @@ defmodule LoggerFileBackendTest do
     assert contents =~ "metadata6=bar"
   end
 
-  defp has_open(path) do
-    has_open(:os.type(), path)
-  end
-
-  defp has_open({:unix, _}, path) do
-    case System.cmd("lsof", [path]) do
-      {output, 0} ->
-        output =~ System.get_pid()
-
-      _ ->
-        false
-    end
-  end
-
-  defp has_open(_, _) do
-    false
-  end
-
   defp path do
     {:ok, path} = :gen_event.call(Logger, @backend, :path)
+    path
+  end
+
+  defp path_for_file_num(file_num) do
+    {:ok, path} = :gen_event.call(Logger, @backend, {:path_for_file_num, file_num})
     path
   end
 
@@ -242,12 +207,7 @@ defmodule LoggerFileBackendTest do
     :ok = Logger.configure_backend(@backend, opts)
   end
 
-  defp logfile(context, basedir) do
-    logfile =
-      context.test
-      |> Atom.to_string()
-      |> String.replace(" ", "_")
-
-    Path.join(basedir, logfile)
+  defp logfile(context) do
+    Regex.replace(~r/[^\w]/, Atom.to_string(context.test), "_")
   end
 end
