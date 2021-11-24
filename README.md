@@ -1,60 +1,96 @@
-# LoggerFileBackend
+# LoggerFileBackendWin
 
-A simple Elixir `Logger` backend which writes logs to a file. It does not handle log rotation, but it does tolerate log file renames, so it can be used in conjunction with external log rotation.
-
-**Note** The renaming of log files does not work on Windows, because `File.Stat.inode` is used to determine whether the log file has been (re)moved and, on non-Unix, `File.Stat.inode` is always 0.
+A simple Elixir `Logger` backend for Windows, which writes logs to a file. It can rotate files at the start of each new day (local time) and when a maximum size is reached, if you wish it to be so.
 
 **Note** If you are running this with the Phoenix framework, please review the Phoenix specific instructions later on in this file.
 
 ## Configuration
 
-`LoggerFileBackend` is a custom backend for the elixir `:logger` application. As
+`LoggerFileBackendWin` is a custom backend for the elixir `:logger` application. As
 such, it relies on the `:logger` application to start the relevant processes.
 However, unlike the default `:console` backend, we may want to configure
 multiple log files, each with different log levels, formats, etc. Also, we want
 `:logger` to be responsible for starting and stopping each of our logging
 processes for us. Because of these considerations, there must be one `:logger`
 backend configured for each log file we need. Each backend has a name like
-`{LoggerFileBackend, id}`, where `id` is any elixir term (usually an atom).
+`{LoggerFileBackendWin, name}`, where `name` is any elixir term (usually an atom).
 
 For example, let's say we want to log error messages to
-`"/var/log/my_app/error.log"`. To do that, we will need to configure a backend.
-Let's call it `{LoggerFileBackend, :error_log}`.
+`"<APPDIR>/logs/error_log_<DATE>.<FILE#>.log"`. To do that, we will need to configure a backend.
 
 Our `config.exs` would have an entry similar to this:
 
 ```elixir
 # tell logger to load a LoggerFileBackend processes
 config :logger,
-  backends: [{LoggerFileBackend, :error_log}]
+  backends: [{LoggerFileBackendWin, :error_log}]
 ```
 
-With this configuration, the `:logger` application will start one `LoggerFileBackend`
-named `{LoggerFileBackend, :error_log}`. We still need to set the correct file
+With this configuration, the `:logger` application will start one `LoggerFileBackendWin`
+named `{LoggerFileBackendWin, :error_log}`. We still need to set the correct file
 path and log levels for the backend, though. To do that, we add another config
 stanza. Together with the stanza above, we'll have something like this:
 
 ```elixir
 # tell logger to load a LoggerFileBackend processes
 config :logger,
-  backends: [{LoggerFileBackend, :error_log}]
+  backends: [{LoggerFileBackendWin, :error_log}]
 
 # configuration for the {LoggerFileBackend, :error_log} backend
 config :logger, :error_log,
-  path: "/var/log/my_app/error.log",
+  dir: "logs",
   level: :error
 ```
 
-Check out the examples below for runtime configuration and configuration for
-multiple log files.
+This will use the `name` defined in the backend configuration for the filename.  You can
+set a custom name using the `filename` option.  The complete filename looks like:
+`"#{dir}/#{filename}_#{Date.to_string(date).#{file_number}.log"`.  The file number starts
+at `0` and newer ones are incremented by one.  We do not rename them, the highest number 
+is always the most recent.
 
-`LoggerFileBackend` supports the following configuration values:
+`LoggerFileBackendWin` supports the following configuration values:
 
-* `path` - the path to the log file
+* `dir` - the directory where log files are saved
+* `filename` - the file name to write to
 * `level` - the logging level for the backend
 * `format` - the logging format for the backend
 * `metadata` - the metadata to include
 * `metadata_filter` - metadata terms which must be present in order to log
+* `rotate` - file rotation configuration
+
+### File Rotation
+
+```elixir
+config :logger, :error_log,
+  dir: "logs",
+  level: :error,
+  rotate: %{
+    daily: true,
+    days: 30,
+    keep: 3,
+    max_bytes: 1_000_000
+  }
+```
+
+The above configuration will:
+
+* rotate files daily
+* keep 30 days worth of logs
+* create a new log file once the current one exceeds `max_bytes`
+* keeping up to `3` x `1,000,000` byte files for each day
+
+So you'll end up with something like this:
+
+```
+error_log_2021-06-18.1.log
+error_log_2021-06-18.0.log
+
+error_log_2021-06-17.0.log
+
+error_log_2021-06-16.2.log
+error_log_2021-06-16.1.log
+error_log_2021-06-16.0.log
+```
 
 ### Examples
 
@@ -63,7 +99,8 @@ multiple log files.
 ```elixir
 Logger.add_backend {LoggerFileBackend, :debug}
 Logger.configure_backend {LoggerFileBackend, :debug},
-  path: "/path/to/debug.log",
+  dir: "/path/to",
+  filename: "debug"
   format: ...,
   metadata: ...,
   metadata_filter: ...
@@ -73,15 +110,13 @@ Logger.configure_backend {LoggerFileBackend, :debug},
 
 ```elixir
 config :logger,
-  backends: [{LoggerFileBackend, :info},
-             {LoggerFileBackend, :error}]
+  backends: [{LoggerFileBackendWin, :info},
+             {LoggerFileBackendWin, :error}]
 
 config :logger, :info,
-  path: "/path/to/info.log",
   level: :info
 
 config :logger, :error,
-  path: "/path/to/error.log",
   level: :error
 ```
 
@@ -91,10 +126,9 @@ This example only logs `:info` statements originating from the `:ui` OTP app; th
 
 ```elixir
 config :logger,
-  backends: [{LoggerFileBackend, :ui}]
+  backends: [{LoggerFileBackendWin, :ui}]
 
 config :logger, :ui,
-  path: "/path/to/ui.log",
   level: :info,
   metadata_filter: [application: :ui]
 ```
@@ -104,10 +138,9 @@ This example only writes log statements with a custom metadata key to the file.
 ```elixir
 # in a config file:
 config :logger,
-  backends: [{LoggerFileBackend, :device_1}]
+  backends: [{LoggerFileBackendWin, :device_1}]
 
 config :logger, :device_1,
-  path: "/path/to/device_1.log",
   level: :debug,
   metadata_filter: [device: 1]
 
@@ -139,12 +172,14 @@ def application do
 end
   
 defp deps do
-  [ ...
-    {:logger_file_backend, "~> 0.0.10"},
+  [ 
+    ...
+    {:logger_file_backend_win, "~> 0.0.1"},
+    ...
   ]
 end
 ```
 
-### Image Attribution
+###  Attribution
 
-"log" by Matthew Weatherall from [the Noun Project](https://thenounproject.com/).
+This project is little more than [logger_file_backend](https://github.com/onkel-dirtus/logger_file_backend) modified to rotate files on Windows.
