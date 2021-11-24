@@ -288,7 +288,7 @@ defmodule LoggerFileBackendWin do
     format_opts = Keyword.get(opts, :format, @default_format)
     format = Logger.Formatter.compile(format_opts)
     dir = Keyword.get(opts, :dir, ".")
-    filename = Keyword.get(opts, :filename, "log")
+    filename = Keyword.get(opts, :filename, to_string(name))
     metadata_filter = Keyword.get(opts, :metadata_filter)
     rotate = Keyword.get(opts, :rotate)
     date = local_date()
