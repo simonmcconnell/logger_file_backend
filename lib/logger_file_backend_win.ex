@@ -292,7 +292,7 @@ defmodule LoggerFileBackendWin do
     metadata_filter = Keyword.get(opts, :metadata_filter)
     rotate = Keyword.get(opts, :rotate)
     date = local_date()
-    file_num = next_file_num(dir, filename, date)
+    file_num = current_file_num(dir, filename, date)
     path = path(dir, filename, date, file_num)
 
     if !state[:rotate][:daily] && rotate[:daily], do: send_date_rotate(date)
@@ -340,9 +340,9 @@ defmodule LoggerFileBackendWin do
     end
   end
 
-  defp next_file_num(nil, _filename, _date), do: 0
+  defp current_file_num(nil, _filename, _date), do: 0
 
-  defp next_file_num(dir, filename, date) do
+  defp current_file_num(dir, filename, date) do
     case File.ls(dir) do
       {:ok, files} ->
         date_str = Date.to_string(date)
@@ -359,7 +359,7 @@ defmodule LoggerFileBackendWin do
           |> Enum.take(1)
 
         case largest_file_num do
-          [n] -> n + 1
+          [n] -> n
           [] -> 0
         end
 
