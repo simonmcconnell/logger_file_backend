@@ -1,11 +1,11 @@
 defmodule LoggerFileBackendWin.Mixfile do
   use Mix.Project
 
-  @version "0.0.12"
+  @version "0.0.1"
 
   def project do
     [
-      app: :logger_file_backend,
+      app: :logger_file_backend_win,
       version: @version,
       elixir: "~> 1.0",
       description: description(),
@@ -14,8 +14,7 @@ defmodule LoggerFileBackendWin.Mixfile do
       docs: [
         main: "readme",
         source_ref: "v#{@version}",
-        source_url: "https://github.com/onkel-dirtus/logger_file_backend",
-        logo: "assets/logo.png",
+        source_url: "https://github.com/simonmcconnell/logger_file_backend_win",
         extras: ["README.md", "CHANGELOG.md"]
       ]
     ]
@@ -26,17 +25,16 @@ defmodule LoggerFileBackendWin.Mixfile do
   end
 
   defp description do
-    "Simple logger backend that writes to a file"
+    "Simple logger backend that writes to a file (for Windows)"
   end
 
   defp package do
     [
-      maintainers: ["Kurt Williams", "Everett Griffiths"],
+      maintainers: ["Simon McConnell"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/onkel-dirtus/logger_file_backend"},
+      links: %{"GitHub" => "https://github.com/simonmcconnell/logger_file_backend_win"},
       files: [
         "lib",
-        "assets/logo.png",
         "mix.exs",
         "README*",
         "CHANGELOG*",
@@ -47,8 +45,8 @@ defmodule LoggerFileBackendWin.Mixfile do
 
   defp deps do
     [
-      {:credo, "~> 1.0", only: [:dev, :test]},
-      {:ex_doc, "~> 0.24", only: :dev}
+      {:credo, "~> 1.6", only: [:dev, :test]},
+      {:ex_doc, "~> 0.26", only: :dev}
     ]
   end
 end
