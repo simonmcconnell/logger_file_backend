@@ -60,15 +60,15 @@ defmodule LoggerFileBackendWin do
         %{
           dir: dir,
           filename: filename,
-          file_num: file_num,
           date: date,
-          rotate: %{daily: true, keep: keep}
+          rotate: %{daily: true}
         } = state
       ) do
     today = local_date()
 
     if Date.compare(today, date) == :gt do
-      delete_old_files(dir, filename, file_num, date, keep)
+      days = state[:rotate][:days] || 0
+      delete_files_for_date(dir, filename, Date.add(date, -days - 1))
       send_date_rotate(today)
       path = path(dir, filename, today, 0)
       {:ok, %{state | date: today, file_num: 0, path: path}}
@@ -163,8 +163,6 @@ defmodule LoggerFileBackendWin do
 
   defp rotate(state), do: state
 
-  defp delete_old_files(_dir, _filename, _file_num, _date, nil), do: :ok
-
   defp delete_old_files(dir, filename, file_num, date, keep) do
     Enum.flat_map((file_num - keep)..0//-1, fn x ->
       path = path(dir, filename, date, x)
@@ -174,30 +172,24 @@ defmodule LoggerFileBackendWin do
         _ -> []
       end
     end)
-
-    # if deleted == [] do
-    #   :ok
-    # else
-    #   delete_files_for_date(dir, filename, date)
-    # end
   end
 
-  # defp delete_files_for_date(dir, filename, date) do
-  #   case File.ls(dir) do
-  #     {:ok, files} ->
-  #       files
-  #       |> Enum.filter(&String.match?(&1, ~r/#{filename}_#{Date.to_string(date)}(\.\d+)?\.log/))
-  #       |> Enum.map(&File.rm(Path.join(dir, &1)))
-  #       |> Enum.count()
-  #       |> case do
-  #         0 -> false
-  #         _ -> delete_files_for_date(dir, filename, Date.add(date, -1))
-  #       end
+  defp delete_files_for_date(dir, filename, date) do
+    case File.ls(dir) do
+      {:ok, files} ->
+        files
+        |> Enum.filter(&String.match?(&1, ~r/#{filename}_#{Date.to_string(date)}(\.\d+)?\.log/))
+        |> Enum.map(&File.rm(Path.join(dir, &1)))
+        |> Enum.count()
+        |> case do
+          0 -> false
+          _ -> delete_files_for_date(dir, filename, Date.add(date, -1))
+        end
 
-  #     _ ->
-  #       false
-  #   end
-  # end
+      _ ->
+        false
+    end
+  end
 
   defp open_log(path) do
     case path |> Path.dirname() |> File.mkdir_p() do
