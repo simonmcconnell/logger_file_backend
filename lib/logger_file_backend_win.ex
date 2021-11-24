@@ -20,7 +20,6 @@ defmodule LoggerFileBackendWin do
   @default_format "$time $metadata[$level] $message\n"
 
   def init({__MODULE__, name}) do
-    send_date_rotate(local_date())
     {:ok, configure(name, [])}
   end
 
@@ -63,7 +62,7 @@ defmodule LoggerFileBackendWin do
           filename: filename,
           file_num: file_num,
           date: date,
-          rotate: %{keep: keep}
+          rotate: %{daily: true, keep: keep}
         } = state
       ) do
     today = local_date()
@@ -71,7 +70,8 @@ defmodule LoggerFileBackendWin do
     if Date.compare(today, date) == :gt do
       delete_old_files(dir, filename, file_num, date, keep)
       send_date_rotate(today)
-      {:ok, %{state | date: today, file_num: 0, path: path(dir, filename, today, 0)}}
+      path = path(dir, filename, today, 0)
+      {:ok, %{state | date: today, file_num: 0, path: path}}
     else
       send_date_rotate(date)
       {:ok, state}
@@ -302,6 +302,8 @@ defmodule LoggerFileBackendWin do
     date = local_date()
     file_num = next_file_num(dir, filename, date)
     path = path(dir, filename, date, file_num)
+
+    if !state[:rotate][:daily] && rotate[:daily], do: send_date_rotate(date)
 
     %{
       state
