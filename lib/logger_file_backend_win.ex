@@ -314,7 +314,7 @@ defmodule LoggerFileBackendWin do
   end
 
   defp local do
-    DateTime.add(DateTime.utc_now(), tz_offset())
+    DateTime.add(DateTime.utc_now(), -tz_offset())
   end
 
   defp local_date do
@@ -347,18 +347,16 @@ defmodule LoggerFileBackendWin do
       {:ok, files} ->
         date_str = Date.to_string(date)
 
-        largest_file_num =
-          files
-          |> Enum.flat_map(fn f ->
-            case Regex.run(~r/#{filename}_#{date_str}\.(\d+)\.log/, f, capture: :all_but_first) do
-              [n] -> [String.to_integer(n)]
-              nil -> []
-            end
-          end)
-          |> Enum.sort(:desc)
-          |> Enum.take(1)
-
-        case largest_file_num do
+        files
+        |> Enum.flat_map(fn f ->
+          case Regex.run(~r/#{filename}_#{date_str}\.(\d+)\.log/, f, capture: :all_but_first) do
+            [n] -> [String.to_integer(n)]
+            nil -> []
+          end
+        end)
+        |> Enum.sort(:desc)
+        |> Enum.take(1)
+        |> case do
           [n] -> n
           [] -> 0
         end
