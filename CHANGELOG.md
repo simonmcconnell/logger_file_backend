@@ -1,4 +1,4 @@
-# Changelog - logger_file_backend_win
+# Changelog
 
 ## 0.0.1
 

@@ -10,6 +10,7 @@ defmodule LoggerFileBackendWin.Mixfile do
       elixir: "~> 1.0",
       description: description(),
       package: package(),
+      name: "LoggerFileBackendWin",
       deps: deps(),
       docs: [
         main: "readme",

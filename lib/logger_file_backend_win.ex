@@ -84,7 +84,7 @@ defmodule LoggerFileBackendWin do
 
   # helpers
 
-  def send_date_rotate(date) do
+  defp send_date_rotate(date) do
     tomorrow = date |> Date.add(1) |> DateTime.new!(~T[00:00:00.000000])
 
     case DateTime.diff(tomorrow, local(), :millisecond) do
