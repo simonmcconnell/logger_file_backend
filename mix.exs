@@ -25,7 +25,7 @@ defmodule LoggerFileBackendWin.Mixfile do
   end
 
   defp description do
-    "Simple logger backend that writes to a file (for Windows)"
+    "Logger backend that writes to a file, rotated daily."
   end
 
   defp package do
