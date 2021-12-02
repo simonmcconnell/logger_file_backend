@@ -10,6 +10,7 @@ defmodule LoggerFileBackendWin.Mixfile do
       elixir: "~> 1.0",
       description: description(),
       package: package(),
+      name: "LoggerFileBackendWin",
       deps: deps(),
       docs: [
         main: "readme",
@@ -25,7 +26,7 @@ defmodule LoggerFileBackendWin.Mixfile do
   end
 
   defp description do
-    "Simple logger backend that writes to a file (for Windows)"
+    "Logger backend that writes to a file, rotated daily."
   end
 
   defp package do
