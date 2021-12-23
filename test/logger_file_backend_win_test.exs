@@ -4,12 +4,16 @@ defmodule LoggerFileBackendWinTest do
 
   @backend {LoggerFileBackendWin, :test}
   @basedir "test/logs"
+  @author "YeahNah_NahYeah-Nah__BananaTown1974 Swamp Wallaby"
+  @app "LoggerFileBackendWin"
+  @version "20.1.2"
 
   import LoggerFileBackendWin, only: [prune: 1, metadata_matches?: 2]
 
   setup_all do
     on_exit(fn ->
       File.rm_rf!(@basedir)
+      File.rm_rf!(local_app_data_dir())
     end)
   end
 
@@ -17,15 +21,15 @@ defmodule LoggerFileBackendWinTest do
     # We add and remove the backend here to avoid cross-test effects
     Logger.add_backend(@backend, flush: true)
 
-    config(path: @basedir, filename: logfile(context), level: :debug)
+    config(dir: @basedir, filename: logfile(context), level: :debug)
 
     on_exit(fn ->
       :ok = Logger.remove_backend(@backend)
     end)
   end
 
-  test "does not crash if path isn't set" do
-    config(path: nil)
+  test "does not crash if dir isn't set" do
+    config(dir: nil)
 
     Logger.debug("foo")
     assert {:error, :already_present} = Logger.add_backend(@backend)
@@ -111,7 +115,7 @@ defmodule LoggerFileBackendWinTest do
   end
 
   test "can configure dir" do
-    new_dir = "test/logs/test2"
+    new_dir = "test/logs/test2/"
     config(dir: new_dir)
     assert Path.dirname(new_dir) == Path.dirname(path())
   end
@@ -189,6 +193,16 @@ defmodule LoggerFileBackendWinTest do
     assert contents =~ "metadata6=bar"
   end
 
+  test "logs to :user_data" do
+    config(dir: {:user_data, @app, author: @author, version: @version})
+    assert local_app_data_dir() == Path.dirname(path())
+  end
+
+  test "logs to :user_log" do
+    config(dir: {:user_log, @app, author: @author, version: @version})
+    assert Path.join(local_app_data_dir(), "Logs") == Path.dirname(path())
+  end
+
   defp path do
     {:ok, path} = :gen_event.call(Logger, @backend, :path)
     path
@@ -209,5 +223,11 @@ defmodule LoggerFileBackendWinTest do
 
   defp logfile(context) do
     Regex.replace(~r/[^\w]/, Atom.to_string(context.test), "_")
+  end
+
+  defp local_app_data_dir do
+    [System.get_env("LOCALAPPDATA"), @author, @app, @version]
+    |> Path.join()
+    |> Path.expand()
   end
 end

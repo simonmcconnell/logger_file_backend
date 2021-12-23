@@ -58,6 +58,12 @@ is always the most recent.
 * `metadata_filter` - metadata terms which must be present in order to log
 * `rotate` - file rotation configuration
 
+### Directory
+
+`dir` accepts a string or a tuple `{:user_data|:user_log, app, opts}`, where opts can include `author` and/or `version`.
+This will output logs to `C:/Users/<user>/AppData/Local/[author/]<app>/[version/]` for `:user_data` or 
+`C:/Users/<user>/AppData/Local/[author/]<app>/[version/]Logs` for `:user_log`.
+
 ### File Rotation
 
 ```elixir
@@ -165,7 +171,7 @@ Phoenix makes use of its own `mix.exs` file to track dependencies and additional
 def application do
     [applications: [
       ...,
-      :logger_file_backend,
+      :logger_file_backend_win,
       ...
       ]
     ]
@@ -174,7 +180,7 @@ end
 defp deps do
   [ 
     ...
-    {:logger_file_backend_win, "~> 0.0.1"},
+    {:logger_file_backend_win, "~> 0.0.2"},
     ...
   ]
 end

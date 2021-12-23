@@ -287,7 +287,7 @@ defmodule LoggerFileBackendWin do
     metadata = Keyword.get(opts, :metadata, [])
     format_opts = Keyword.get(opts, :format, @default_format)
     format = Logger.Formatter.compile(format_opts)
-    dir = Keyword.get(opts, :dir, ".")
+    dir = Keyword.get(opts, :dir, ".") |> parse_dir()
     filename = Keyword.get(opts, :filename, to_string(name))
     metadata_filter = Keyword.get(opts, :metadata_filter)
     rotate = Keyword.get(opts, :rotate)
@@ -312,6 +312,13 @@ defmodule LoggerFileBackendWin do
         date: date
     }
   end
+
+  defp parse_dir({path_type, app, opts}) when path_type in [:user_data, :user_log] do
+    opts = opts |> Map.new() |> Map.take([:author, :version])
+    :filename.basedir(path_type, app, opts) |> to_string()
+  end
+
+  defp parse_dir(dir), do: dir
 
   defp local do
     DateTime.add(DateTime.utc_now(), -tz_offset())
