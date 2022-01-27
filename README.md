@@ -61,8 +61,7 @@ is always the most recent.
 ### Directory
 
 `dir` accepts a string or a tuple `{:user_data|:user_log, app, opts}`, where opts can include `author` and/or `version`.
-This will output logs to `C:/Users/<user>/AppData/Local/[author/]<app>/[version/]` for `:user_data` or 
-`C:/Users/<user>/AppData/Local/[author/]<app>/[version/]Logs` for `:user_log`.
+This will output logs to `C:/Users/<user>/AppData/Local/[author/]<app>/[version/]` for `:user_data` or `C:/Users/<user>/AppData/Local/[author/]<app>/[version/]Logs` for `:user_log`.
 
 ### File Rotation
 

@@ -318,7 +318,7 @@ defmodule LoggerFileBackendWin do
     :filename.basedir(path_type, app, opts) |> to_string()
   end
 
-  defp parse_dir(dir), do: dir
+  defp parse_dir(dir) when is_binary(dir), do: dir
 
   defp local do
     DateTime.add(DateTime.utc_now(), -tz_offset())

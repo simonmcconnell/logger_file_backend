@@ -1,12 +1,10 @@
 defmodule LoggerFileBackendWin.Mixfile do
   use Mix.Project
 
-  @version "0.0.2"
-
   def project do
     [
       app: :logger_file_backend_win,
-      version: @version,
+      version: version(),
       elixir: "~> 1.0",
       description: description(),
       package: package(),
@@ -14,11 +12,17 @@ defmodule LoggerFileBackendWin.Mixfile do
       deps: deps(),
       docs: [
         main: "readme",
-        source_ref: "v#{@version}",
+        source_ref: "v#{version()}",
         source_url: "https://github.com/simonmcconnell/logger_file_backend_win",
         extras: ["README.md", "CHANGELOG.md"]
       ]
     ]
+  end
+
+  defp version do
+    "VERSION"
+    |> File.read!()
+    |> String.trim()
   end
 
   def application do
